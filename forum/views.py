@@ -16,12 +16,13 @@ from django.template import RequestContext
 from django.utils import simplejson
 from django.utils.html import *
 from django.utils.translation import ugettext as _
-from markdown2 import Markdown
+
 import os.path
 import random
 import time
 
 import datetime
+from forum import markup
 from forum import auth
 from forum.auth import *
 from forum.const import *
@@ -43,7 +44,6 @@ QUESTIONS_PAGE_SIZE = 10
 USERS_PAGE_SIZE = 35
 # used in answers
 ANSWERS_PAGE_SIZE = 10
-markdowner = Markdown(html4tags=True)
 question_type = ContentType.objects.get_for_model(Question)
 answer_type = ContentType.objects.get_for_model(Answer)
 comment_type = ContentType.objects.get_for_model(Comment)
@@ -175,7 +175,7 @@ def create_new_answer(question=None, author=None, \
                       added_at=None, wiki=False, \
                       text='', email_notify=False):
 
-    html = sanitize_html(markdowner.convert(text))
+    html = sanitize_html(markup.convert(text))
 
     #create answer
     answer = Answer(
@@ -229,7 +229,7 @@ def create_new_question(title=None, author=None, added_at=None,
     """this is not a view
     and maybe should become one of the methods on Question object?
     """
-    html = sanitize_html(markdowner.convert(text))
+    html = sanitize_html(markup.convert(text))
     question = Question(
                         title=title,
                         author=author,
@@ -273,7 +273,7 @@ def ask(request):
             wiki = form.cleaned_data['wiki']
             tagnames = form.cleaned_data['tags'].strip()
             text = form.cleaned_data['text']
-            html = sanitize_html(markdowner.convert(text))
+            html = sanitize_html(markup.convert(text))
             summary = strip_tags(html)[:120]
 
             if request.user.is_authenticated():
@@ -496,7 +496,7 @@ def _edit_question(request, question):
             # Always check modifications against the latest revision
             form = EditQuestionForm(question, latest_revision, request.POST)
             if form.is_valid():
-                html = sanitize_html(markdowner.convert(form.cleaned_data['text']))
+                html = sanitize_html(markup.convert(form.cleaned_data['text']))
                 if form.has_changed():
                     edited_at = datetime.datetime.now()
                     tags_changed = (latest_revision.tagnames !=
@@ -579,7 +579,7 @@ def edit_answer(request, id):
             else:
                 form = EditAnswerForm(answer, latest_revision, request.POST)
                 if form.is_valid():
-                    html = sanitize_html(markdowner.convert(form.cleaned_data['text']))
+                    html = sanitize_html(markup.convert(form.cleaned_data['text']))
                     if form.has_changed():
                         edited_at = datetime.datetime.now()
                         updated_fields = {
@@ -625,7 +625,7 @@ def question_revisions(request, id):
     for i, revision in enumerate(revisions):
         revision.html = QUESTION_REVISION_TEMPLATE % {
             'title': revision.title,
-            'html': sanitize_html(markdowner.convert(revision.text)),
+            'html': sanitize_html(markup.convert(revision.text)),
             'tags': ' '.join(['<a class="post-tag">%s</a>' % tag
                              for tag in revision.tagnames.split(' ')]),
         }
@@ -635,7 +635,7 @@ def question_revisions(request, id):
         else:
             revisions[i - 1].diff = QUESTION_REVISION_TEMPLATE % {
                 'title': revisions[0].title,
-                'html': sanitize_html(markdowner.convert(revisions[0].text)),
+                'html': sanitize_html(markup.convert(revisions[0].text)),
                 'tags': ' '.join(['<a class="post-tag">%s</a>' % tag
                                  for tag in revisions[0].tagnames.split(' ')]),
             }
@@ -651,7 +651,7 @@ def answer_revisions(request, id):
     revisions = list(post.revisions.all())
     for i, revision in enumerate(revisions):
         revision.html = ANSWER_REVISION_TEMPLATE % {
-            'html': sanitize_html(markdowner.convert(revision.text))
+            'html': sanitize_html(markup.convert(revision.text))
         }
         if i > 0:
             revisions[i - 1].diff = htmldiff(revision.html,
@@ -684,7 +684,7 @@ def answer(request, id):
                                   )
             else:
                 request.session.flush()
-                html = sanitize_html(markdowner.convert(text))
+                html = sanitize_html(markup.convert(text))
                 summary = strip_tags(html)[:120]
                 anon = AnonymousAnswer(
                                        question=question,
@@ -1967,7 +1967,7 @@ def ask_book(request, short_name):
         form = AskForm(request.POST)
         if form.is_valid():
             added_at = datetime.datetime.now()
-            html = sanitize_html(markdowner.convert(form.cleaned_data['text']))
+            html = sanitize_html(markup.convert(form.cleaned_data['text']))
             question = Question(
                                 title=strip_tags(form.cleaned_data['title']),
                                 author=request.user,

@@ -11,6 +11,9 @@ INTERNAL_IPS = ('127.0.0.1',)
 ugettext = lambda s: s
 LOGIN_URL = '/%s%s' % (ugettext('account/'), ugettext('signin/'))
 
+#Default markup to use
+DEFAULT_MARKUP = "markdown"
+
 #EMAIL AND ADMINS
 ADMINS = (
     ('CNProg team', 'team@cnprog.com'),
