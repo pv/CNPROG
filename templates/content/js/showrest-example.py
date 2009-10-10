@@ -32,6 +32,21 @@ The snakes on the plane, `parrot <http://www.perl.org>`__, and some
 Foo::
 
     bar
+        arff
+  barff
+
+Foo
+
+1.
+
+  Blashyrkh
+
+     a) Nematron
+     b) Il satanas
+
+2. Ravendark
+
+3.
 
 Barf
 ====
@@ -43,8 +58,9 @@ Cheese [1] and spam [BLS]
 
 .. _spam: http://www.spamhaus.org/
 .. _foo quux: http://www.google.fi/
-.. [1]: Off the mortal coil
-.. [BLS]: Viking and Viking: The art of spam. Spam press (year of spam).
+.. [1] Off the mortal coil
+.. [BLS] Viking and Viking:
+   The art of spam. Spam press (year of spam).
 """
 
 HTML = """
