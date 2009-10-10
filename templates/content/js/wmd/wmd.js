@@ -798,6 +798,18 @@ Attacklab.wmdBase = function(){
 		init();
 	};
 	
+        util.markdownConverter = null;
+        util.convertToHtml = function(text) {
+	    var markup = wmd.wmd_env.output.toLowerCase();
+	    if (!/markdown/.test(markup)) {
+		if (!util.markdownConverter) {
+		    util.markdownConverter = new wmd.showdown.converter();
+		}
+		return util.markdownConverter.makeHtml(text);
+	    }
+	    return text;
+	}
+
 	// I think my understanding of how the buttons and callbacks are stored in the array is incomplete.
 	wmd.editor = function(previewRefreshCallback){
 	
@@ -1224,22 +1236,12 @@ Attacklab.wmdBase = function(){
 		
 		// Convert the contents of the input textarea to HTML in the output/preview panels.
 		var convertToHtml = function(){
-		
-			if (wmd.showdown) {
-				var markdownConverter = new wmd.showdown.converter();
-			}
 			var text = inputBox.value;
-			
 			var callback = function(){
 				inputBox.value = text;
 			};
-			
-			if (!/markdown/.test(wmd.wmd_env.output.toLowerCase())) {
-				if (markdownConverter) {
-					inputBox.value = markdownConverter.makeHtml(text);
-					top.setTimeout(callback, 0);
-				}
-			}
+		        inputBox.value = util.convertToHtml(text);
+		        top.setTimeout(callback, 0);
 			return true;
 		};
 		
@@ -1793,7 +1795,6 @@ Attacklab.wmdBase = function(){
 	wmd.previewManager = function(){
 		
 		var managerObj = this;
-		var converter;
 		var poller;
 		var timeout;
 		var elapsedTime;
@@ -1852,13 +1853,7 @@ Attacklab.wmdBase = function(){
 			
 			var prevTime = new Date().getTime();
 			
-			if (!converter && wmd.showdown) {
-				converter = new wmd.showdown.converter();
-			}
-			
-			if (converter) {
-				text = converter.makeHtml(text);
-			}
+		        text = util.convertToHtml(text);
 			
 			// Calculate the processing time of the HTML creation.
 			// It's used as the delay time in the event listener.
