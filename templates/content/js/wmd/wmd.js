@@ -797,30 +797,37 @@ Attacklab.wmdBase = function(){
 		
 		init();
 	};
-	
+
         util.markdownConverter = null;
         util.rstConverter = null;
         util.convertToHtml = function(text) {
 	    var markup = wmd.wmd_env.output.toLowerCase();
-	    var directives = /^\s*#(rst|markdown)\s(.*)$/;
-	    var selection = text.replace(directives, '$1');
-	    if (selection) {
-		markup = selection;
-		text = text.replace(directives, '$2');
+	    var directives = /^\s*#(rst|markdown|plain)\s+/;
+	    if (directives.test(text)) {
+		markup = RegExp.lastParen;
+		text = RegExp.rightContext;
 	    }
-	    if (!/markdown/.test(markup)) {
-		if (!util.markdownConverter) {
+
+	    if (markup == "markdown") {
+		if (!util.markdownConverter && wmd.showdown) {
 		    util.markdownConverter = new wmd.showdown.converter();
 		}
-		return util.markdownConverter.makeHtml(text);
+		if (util.markdownConverter) {
+		    return util.markdownConverter.makeHtml(text);
+		}
 	    }
-	    if (!/rst/.test(markup)) {
+
+	    if (markup == "rst") {
 		if (!util.rstConverter) {
 		    util.rstConverter = new showrest.converter();
 		}
-		return util.rstConverter.makeHtml(text);
+		if (util.rstConverter) {
+		    return util.rstConverter.makeHtml(text);
+		}
 	    }
-	    return text;
+
+	    /* Fallback to plain text */
+	    return "<p>" + escape(text) + "</p>";
 	}
 
 	// I think my understanding of how the buttons and callbacks are stored in the array is incomplete.
