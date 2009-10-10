@@ -2,6 +2,17 @@
 TEXT = """
 \*fuu\* \`bar`
 
+.. table:: Fubar beyond all
+   :class: bar-
+      foo
+
+   =====  =====
+   fii    bar
+   =====  =====
+   ffu    uu
+   ffa    aaa
+   =====  =====
+
 Spam spam spam spam *grail* *spanking* **virgins** and the **Castle
 of Aaaaaaargh!** summa summarum *Sir John*.
 
@@ -16,7 +27,17 @@ Also::
 | Bar quux.
 
 The snakes on the plane, `parrot <http://www.perl.org>`__, and some
-`spam`_ and maybe `foo quux`_.
+`spam`_ and maybe `foo quux`_. http://python.org/
+
+Foo::
+
+    bar
+
+Barf
+====
+
+Bar
+---
 
 Cheese [1] and spam [BLS]
 
@@ -30,6 +51,7 @@ HTML = """
 <html>
   <head>
     <script type='text/javascript' src='jquery-1.2.6.js'></script>
+    <script type='text/javascript' src='prettyprint.js'></script>
     <script type='text/javascript' src='showrest.js'></script>
   </head>
   <body>
@@ -38,12 +60,14 @@ HTML = """
     <div>%(output)s</div>
     <hr>
     <div><pre id='input'>%(source)s</pre></div>
+    <hr>
+    <div><pre id='debug'></pre></div>
     <script>
       $().ready(function() {
         var converter = new showrest.converter();
         var text = $('#input').text();
         var html = converter.makeHtml(text);
-        $('#input').text(converter.makeHtml(html));
+        $('#input').text(html);
         $('#output').html(html);
       });
     </script>
