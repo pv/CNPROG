@@ -799,13 +799,26 @@ Attacklab.wmdBase = function(){
 	};
 	
         util.markdownConverter = null;
+        util.rstConverter = null;
         util.convertToHtml = function(text) {
 	    var markup = wmd.wmd_env.output.toLowerCase();
+	    var directives = /^\s*#(rst|markdown)\s(.*)$/;
+	    var selection = text.replace(directives, '$1');
+	    if (selection) {
+		markup = selection;
+		text = text.replace(directives, '$2');
+	    }
 	    if (!/markdown/.test(markup)) {
 		if (!util.markdownConverter) {
 		    util.markdownConverter = new wmd.showdown.converter();
 		}
 		return util.markdownConverter.makeHtml(text);
+	    }
+	    if (!/rst/.test(markup)) {
+		if (!util.rstConverter) {
+		    util.rstConverter = new showrest.converter();
+		}
+		return util.rstConverter.makeHtml(text);
 	    }
 	    return text;
 	}
