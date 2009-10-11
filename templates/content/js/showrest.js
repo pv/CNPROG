@@ -72,6 +72,7 @@ function debug(obj) {
             var ind2 = gen_indent(n+step);
             var acc_len = ind.length;
             var was_list = false;
+            var i;
             t = "[";
             for (i = 0; i < o.length; ++i) {
                 s = walk(o[i], n+step);
@@ -208,6 +209,25 @@ showrest.converter = function() {
         return "<div>" + this.render(item[2]) + "</div>\n";
     }
 
+    this.visit_link = function(item, i, items) {
+        /* FIXME: implement link parsing elsewhere properly */
+        m = item[1][0].match(/^(.*)\s+<(.+)>\s*$/);
+        if (m) {
+            debug(m);
+            return "<a href=\"" + encodeURI(m[2]) + "\">" + this.escape(m[1]) + "</a>";
+        } else {
+            /* FIXME: implement link target parsing */
+            return "<a href=\"#\">&lt;NOTIMPLEMENTED&gt;</a>";
+        }
+    }
+
+    this.visit_link_anon = this.visit_link;
+
+    this.visit_link_raw = function(item, i, items) {
+        return "<a href=\"" + encodeURI(item[1][0]) + "\">" 
+            + this.escape(item[1][0]) + "</a>";
+    }
+
     /*
      * Parse tokenized input
      */
@@ -331,7 +351,7 @@ showrest.converter = function() {
             /* Directive option or field */
             m = text.match(/^:([a-z0-9-]+):([^:].*)?$/);
             if (m) {
-                var token = [directive_init ? 'directive-option' : 'field',
+                var token = [directive_init ? 'directive_option' : 'field',
                              [m[1], m[2]], null];
                 token[1] = token[1].concat(slurp_indented(indent));
                 stack[0][2].push(token);
@@ -507,7 +527,7 @@ showrest.converter = function() {
                         m[1] = m[1].slice(1, m[1].length - 1);
                     }
                     if (m[2] == '__') {
-                        tokens.push(['link-anon', [m[1]], null]);
+                        tokens.push(['link_anon', [m[1]], null]);
                     } else {
                         tokens.push(['link', [m[1]], null]);
                     }
@@ -577,14 +597,18 @@ showrest.converter = function() {
                     tokens.push(['emph', [m[1]], null]);
                     continue;
                 }
+            }
 
-                /* Raw link */
-                m = text.match(/^(http:\/\/[^\s,.!?]+)/);
-                if (m) {
-                    push();
-                    tokens.push(['link-raw', [m[1]], null]);
-                    continue;
+            /* Raw link */
+            /* FIXME: should it be separated by sep-chars? */
+            m = text.match(/^([^\*`_]+\s|)(http:\/\/[^\s,!?]*[^\s.,!?])/);
+            if (m) {
+                push();
+                if (m[1]) {
+                    tokens.push(['text', [m[1]], null]);
                 }
+                tokens.push(['link_raw', [m[2]], null]);
+                continue;
             }
 
             /* Other stuff */
