@@ -1,3 +1,4 @@
+import cgi
 
 TEXT = """
 \*fuu\* \`bar`
@@ -12,6 +13,8 @@ TEXT = """
    ffu    uu
    ffa    aaa
    =====  =====
+
+Fuu baz quux.
 
 Spam spam spam spam *grail* *spanking* **virgins** and the **Castle
 of Aaaaaaargh!** summa summarum *Sir John*.
@@ -113,7 +116,7 @@ def render_docutils(text):
 
 def main():
     output = render_docutils(TEXT)
-    html = HTML % dict(source=TEXT, output=output)
+    html = HTML % dict(source=cgi.escape(TEXT), output=output)
 
     f = open('showrest-example.html', 'w')
     f.write(html)

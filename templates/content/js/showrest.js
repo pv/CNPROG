@@ -73,7 +73,7 @@ function debug(obj) {
             var acc_len = ind.length;
             var was_list = false;
             t = "[";
-            for (i in o) {
+            for (i = 0; i < o.length; ++i) {
                 s = walk(o[i], n+step);
                 acc_len += s.length;
                 if (s[0] == '[' || s[0] == '{') {
@@ -108,22 +108,111 @@ function debug(obj) {
 showrest.converter = function() {
 
     /*
-     * Dedent and strip text lines to [(indent_size, text), ...]
+     * Convert RST to HTML
      */
-    this.dedent = function(text) {
-	var lines = text.split("\n");
-	var out = [];
-	var indent_re = /^\s*/m;
-	for (i in lines) {
-            line = lines[i];
-	    if (indent_re.test(line)) {
-                var indent = line.length - RegExp.rightContext.length;
-                var text = RegExp.rightContext;
-                /\s*$/.test(text);
- 		out.push([indent, RegExp.leftContext]);
-	    }
-	}
- 	return out;
+    this.makeHtml = function(text) {
+        tokens = this.tokenize(text);
+        tree = this.parse(tokens);
+        //debug(tree[2]);
+        html = this.render(tree[2]);
+
+	return "<p>" + html + "</p>";
+    }
+
+    /*
+     * Render HTML based on a parse tree.
+     */
+    this.render = function(items) {
+        var html = "";
+        var i;
+        for (i = 0; i < items.length; ++i) {
+            html += this.render_one(i, items);
+        }
+        return html;
+    }
+
+    this.render_one = function(i, items) {
+        var item = items[i];
+        var name = item[0];
+
+        if (this["visit_" + name]) {
+            return this["visit_" + name](item, i, items);
+        }
+        return "";
+    }
+
+    this.escape = function(text) {
+        text = new String(text);
+        return text.replace('<', '&lt;').replace('>', '&gt;').replace('&','&amp;');
+    }
+
+    this.visit_inline = function(item, i, items) {
+        var html = "";
+        html += "<p>" + this.render(item[2]) + "</p>\n";
+        return html;
+    }
+
+    this.visit_text = function(item, i, items) {
+        return this.escape(item[1]);
+    }
+
+    this.visit_emph = function(item, i, items) {
+        return "<em>" + this.escape(item[1]) + "</em>";
+    }
+
+    this.visit_strong = function(item, i, items) {
+        return "<strong>" + this.escape(item[1]) + "</strong>";
+    }
+
+    this.visit_list = function(item, i, items) {
+        var first_list = (i == 0 || items[i-1][0] != 'list');
+        var last_list = (i == items.length-1 || !items[i+1] 
+                         || items[i+1][0] != 'list');
+        var html = "";
+
+        if (first_list) {
+            /* FIXME: parse list type elsewhere */
+            html += "<ol>";
+        }
+
+        html += "<li>" + this.render(item[2]) + "</li>";
+
+        if (last_list) {
+            /* FIXME: parse list type elsewhere */
+            //debug("XXX");
+            //debug((i) + " :: " + (i+1));
+            html += "</ol>\n";
+        }
+
+        return html;
+    }
+
+    this.visit_section = function(item, i, items) {
+        /* FIXME: parse section underlines globally */
+        return "<h1>" + this.escape(item[1][0]) + "</h1>\n";
+    }
+
+    this.visit_target = function(item, i, items) {
+        /* skip */
+        /* FIXME: parse targets globally */
+        return "";
+    }
+
+    this.visit_foot = function(item, i, items) {
+        /* FIXME: render footnotes */
+        /* FIXME: parse footnote references globally */
+        return "";
+    }
+
+    this.visit_block = function(item, i, items) {
+        return "<div>" + this.render(item[2]) + "</div>\n";
+    }
+
+    /*
+     * Parse tokenized input
+     */
+    this.parse = function(tokens) {
+        return tokens;
     }
 
     /*
@@ -327,22 +416,23 @@ showrest.converter = function() {
             }
 
             /* List items */
-            m = text.match(/^(-|#|[a-z0-9]+\.|[a-z0-9]+\)|\([a-z0-9]+\))(\s+)(.*)/);
-            if (m && (last_empty || preceding_item()[0] != 'inline')) {
+            m = text.match(/^(-|#|[a-z0-9]+\.|[a-z0-9]+\)|\([a-z0-9]+\))(.*)$/);
+            if (m && (last_empty || preceding_item()[0] != 'inline')
+                    && (/^\s/.test(m[2]) || !m[2])) {
                 /* FIXME: validate the list marker, eg., for roman numerals */
                 stack[0][2].push(['list', [m[1]], []]);
 
                 /* Now, do an evil thing: re-process modified line, so that
                    indentation is processed appropriately */
-                lines[i][1] = m[3];
-                lines[i][0] = indent + m[1].length + m[2].length;
+                lines[i][0] = indent + m[1].length;
+                lines[i][1] = m[2];
                 --i;
                 continue;
             }
 
             /* Something else: inline material */
             var item = preceding_item();
-            if (item[0] == 'inline') {
+            if (item[0] == 'inline' && !last_empty) {
                 item[1][0] += " ";
                 item[1][0] += text;
             } else {
@@ -351,34 +441,184 @@ showrest.converter = function() {
             continue;
         }
 
-	return top[2];
+        this.tokenizePostProcess(top);
+	return top;
+    }
+
+    /*
+     * Post-process tokenization: parse inline markup and
+     */
+    this.tokenizePostProcess = function(top) {
+        var stack = [top];
+
+        /* Tokenize all inline markup */
+        while (stack.length > 0) {
+            var item = stack.shift();
+
+            if (item[2]) {
+                stack = item[2].concat(stack);
+            }
+
+            if (item[0] == 'inline') {
+                if (item[1]) {
+                    item[2] = this.tokenizeInline(item[1].join(" "));
+                } else {
+                    item[2] = [];
+                }
+                item[1] = null;
+            }
+        }
+
+        return top;
     }
 
     /*
      * Inline markup tokenizer
      */
     this.tokenizeInline = function(text) {
-        
+        var tokens = [];
+        var last_char = " ";
+        var inline_markup_ok = true;
+
+        if (!text) {
+            return [];
+        }
+
+        push = function() {
+            if (RegExp.lastMatch.length > 0) {
+                last_char = RegExp.lastMatch[RegExp.lastMatch.length-1];
+            } else {
+                last_char = null;
+            }
+            text = RegExp.rightContext;
+        }
+
+        while (text) {
+            inline_markup_ok = /[\s'"(\[{<\-\/:\u2018\u2019\u00ab\u00a1\u00bf\u2010\u2011\u2012\u2013\u2014\u00a0]/.test(last_char);
+
+            if (inline_markup_ok) {
+                /* Inline markup allowed: */
+
+                /* Reference */
+                m = text.match(/^([a-zA-Z0-9-]+|`[^`]+`)(__|_)/);
+                if (m) {
+                    push();
+                    if (/^`/.test(m[1])) {
+                        m[1] = m[1].slice(1, m[1].length - 1);
+                    }
+                    if (m[2] == '__') {
+                        tokens.push(['link-anon', [m[1]], null]);
+                    } else {
+                        tokens.push(['link', [m[1]], null]);
+                    }
+                    continue;
+                }
+                
+                /* Footnote reference */
+                m = text.match(/^\[([a-zA-Z0-9-]+)\]_/);
+                if (m) {
+                    push();
+                    tokens.push(['foot-ref', [m[1]], null]);
+                    continue;
+                }
+                
+                /* Role */
+                m = text.match(/^:([a-zA-Z0-9-]+):`([^`]+)`/);
+                if (!m) {
+                    m = text.match(/^`([^`]+)`:([a-zA-Z0-9-]+):/);
+                    if (m) {
+                        tmp = m[1];
+                        m[1] = m[2];
+                        m[2] = tmp;
+                    }
+                }
+                if (m) {
+                    push();
+                    tokens.push(['role', [m[1], m[2]], null]);
+                    continue;
+                }
+
+                /* Literal */
+                m = text.match(/^``([^`]+)``/);
+                if (m) {
+                    push();
+                    tokens.push(['literal', [m[1]], null]);
+                    continue;
+                }
+                
+                /* Default role */
+                m = text.match(/^`([a-zA-Z0-9-]+)`/);
+                if (m) {
+                    push();
+                    tokens.push(['role', [null, m[1]], null]);
+                    continue;
+                }
+                
+                /* Substitution reference */
+                m = text.match(/^\|([a-zA-Z0-9-])\|/);
+                if (m) {
+                    push();
+                    tokens.push(['subst', [m[1]], null]);
+                    continue;
+                }
+                
+                /* Strong */
+                m = text.match(/^\*\*([^\*:`]+)\*\*/);
+                if (m) {
+                    push();
+                    tokens.push(['strong', [m[1]], null]);
+                    continue;
+                }
+
+                /* Emphasis */
+                m = text.match(/^\*([^\*:`]+)\*/);
+                if (m) {
+                    push();
+                    tokens.push(['emph', [m[1]], null]);
+                    continue;
+                }
+
+                /* Raw link */
+                m = text.match(/^(http:\/\/[^\s,.!?]+)/);
+                if (m) {
+                    push();
+                    tokens.push(['link-raw', [m[1]], null]);
+                    continue;
+                }
+            }
+
+            /* Other stuff */
+            m = text.match(/^[^\*`_]+/);
+            if (m) {
+                push();
+                tokens.push(['text', [m[0]], null]);
+                continue;
+            } else {
+                tokens.push(['error', ["Invalid inline markup: "+text], null]);
+                break;
+            }
+        }
+
+        return tokens;
     }
-    
 
-    this.makeHtml = function(text) {
-        tokens = this.tokenize(text);
-        debug(tokens);
-        debug(this.dedent(text));
-
-	/* Handle escapes */
-	text = text.replace(/\\\*/g, '&#42;');
-	text = text.replace(/\\\>/g, '&gt;');
-	text = text.replace(/\\\</g, '&lt;');
-	text = text.replace(/\\\`/g, '&#96;');
-	text = text.replace(/\\(.)/g, '$1');
-
-	/* Mogrify simple markup */
-	text = text.replace(/\*\*([^\s][^\*]+)\*\*/g, '<b>$1</b>');
-	text = text.replace(/\*([^\s][^\*]+)\*/g, '<em>$1</em>');
-	text = text.replace(/\n[ \t\v\f]*\n/g, '</p><p>');
-
-	return "<p>" + text + "</p>";
+    /*
+     * Dedent and strip text lines to [(indent_size, text), ...]
+     */
+    this.dedent = function(text) {
+	var lines = text.split("\n");
+	var out = [];
+	var indent_re = /^\s*/m;
+        var i;
+	for (i = 0; i < lines.length; ++i) {
+            line = lines[i];
+	    if (indent_re.test(line)) {
+                var indent = line.length - RegExp.rightContext.length;
+                var text = RegExp.rightContext;
+                /\s*$/.test(text);
+ 		out.push([indent, RegExp.leftContext]);
+	    }
+	}
+ 	return out;
     }
 }
