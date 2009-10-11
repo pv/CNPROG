@@ -373,8 +373,23 @@ showrest.converter = function() {
 
             /* Link target */
             m = text.match(/^\.\.\s+_([a-zA-Z0-9.-]+):\s+(.*)$/);
+            if (!m) {
+                m = text.match(/^__\s+_([a-zA-Z0-9.-]+)\s+(.*)$/);
+            }
             if (m) {
                 var token = ['target', [m[1]], null];
+                if (m[2]) {
+                    token[1] = token[1].concat(m[2]);
+                }
+                token[1] = token[1].concat(slurp_indented(indent));
+                stack[0][2].push(token);
+                continue;
+            }
+
+            /* Substitution definition */
+            m = text.match(/^\.\.\s+\|([a-zA-Z0-9.-]+)\|\s+(.*)$/);
+            if (m) {
+                var token = ['subst_def', [m[1]], null];
                 if (m[2]) {
                     token[1] = token[1].concat(m[2]);
                 }
@@ -409,7 +424,7 @@ showrest.converter = function() {
                 continue
             }
 
-            /* Preformatted, maybe (note the next-line look-ahead check) */
+            /* Preformatted (note the next-line look-ahead check) */
             m = text.match(/^(.*)::\s*$/);
             if (m && next_text == "") {
                 if (m[1]) {
@@ -436,7 +451,7 @@ showrest.converter = function() {
             }
 
             /* List items */
-            m = text.match(/^(-|#|[a-z0-9]+\.|[a-z0-9]+\)|\([a-z0-9]+\))(.*)$/);
+            m = text.match(/^(-|\*|\+|\u2022|\u2023|\u2043|#|[a-z0-9]+\.|[a-z0-9]+\)|\([a-z0-9]+\))(.*)$/);
             if (m && (last_empty || preceding_item()[0] != 'inline')
                     && (/^\s/.test(m[2]) || !m[2])) {
                 /* FIXME: validate the list marker, eg., for roman numerals */
@@ -449,6 +464,22 @@ showrest.converter = function() {
                 --i;
                 continue;
             }
+
+            /* FIXME: simple tables */
+
+            /* FIXME: grid tables */
+
+            /* FIXME: definition lists */
+
+            /* FIXME: field lists */
+
+            /* FIXME: option lists */
+
+            /* FIXME: quoted literal blocks */
+
+            /* FIXME: doctest blocks */
+
+            /* FIXME: doctest blocks */
 
             /* Something else: inline material */
             var item = preceding_item();
