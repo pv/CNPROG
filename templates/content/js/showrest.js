@@ -650,13 +650,14 @@ showrest.converter = function() {
             /* Other stuff */
             m = text.match(/([\*`_]+|[a-zA-Z0-9]+_)/);
             if (m) {
-		if (!RegExp.leftContext) {
-                    tokens.push(['error', ["Invalid inline markup: "+text], 
-				 null]);
-		} else {
+		if (RegExp.leftContext.length > 0) {
 		    last_char = RegExp.leftContext[RegExp.leftContext.length-1];
 		    text = RegExp.lastMatch + RegExp.rightContext;
                     tokens.push(['text', [RegExp.leftContext], null]);
+		} else {
+                    tokens.push(['error', ["Invalid inline markup: "+text], 
+				 null]);
+		    break;
 		}
                 continue;
             } else {
