@@ -464,8 +464,9 @@ showrest.converter = function() {
 
                 /* Now, do an evil thing: re-process modified line, so that
                    indentation is processed appropriately */
-                lines[i][0] = indent + m[1].length;
-                lines[i][1] = m[2];
+                mm = m[2].match(/^(\s*)(.*)$/);
+                lines[i][0] = indent + m[1].length + mm[1].length;
+                lines[i][1] = mm[2];
                 --i;
                 continue;
             }
