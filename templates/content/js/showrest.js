@@ -643,13 +643,19 @@ showrest.converter = function() {
             }
 
             /* Other stuff */
-            m = text.match(/^[^\*`_]+/);
+            m = text.match(/([\*`_]+|[a-zA-Z0-9]+_)/);
             if (m) {
-                push();
-                tokens.push(['text', [m[0]], null]);
+		if (!RegExp.leftContext) {
+                    tokens.push(['error', ["Invalid inline markup: "+text], 
+				 null]);
+		} else {
+		    last_char = RegExp.leftContext[RegExp.leftContext.length-1];
+		    text = RegExp.lastMatch + RegExp.rightContext;
+                    tokens.push(['text', [RegExp.leftContext], null]);
+		}
                 continue;
             } else {
-                tokens.push(['error', ["Invalid inline markup: "+text], null]);
+                tokens.push(['text', [text], null]);
                 break;
             }
         }

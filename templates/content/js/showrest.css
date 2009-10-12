@@ -1,0 +1,6 @@
+.showrest-error { 
+  color: red;
+  border: 1px red solid;
+  padding-left: 0.25em;
+  padding-right: 0.25em;
+}
