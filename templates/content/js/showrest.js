@@ -202,7 +202,7 @@ showrest.converter = function() {
     this.visit_foot = function(item, i, items) {
         /* FIXME: render footnotes */
         /* FIXME: parse footnote references globally */
-        return "";
+        return "<NOTIMPLEMENTED: footnote>";
     }
 
     this.visit_block = function(item, i, items) {
@@ -226,6 +226,10 @@ showrest.converter = function() {
     this.visit_link_raw = function(item, i, items) {
         return "<a href=\"" + encodeURI(item[1][0]) + "\">" 
             + this.escape(item[1][0]) + "</a>";
+    }
+
+    this.visit_error = function(item, i, items) {
+        return "<span class=\"showrest-error\">Formatting error: " + this.escape(item[1]) + "</span>";
     }
 
     /*
@@ -444,8 +448,9 @@ showrest.converter = function() {
                 if (text.length > next_text.length) {
                     stack[0][2].push(['error', ['Title underline wrong'], 
                                       null]);
-                }
-                stack[0][2].push(['section', [text, next_text[0]], null]);
+                } else {
+                    stack[0][2].push(['section', [text, next_text[0]], null]);
+		}
                 ++i;
                 continue;
             }
