@@ -117,7 +117,7 @@ showrest.converter = function() {
         //debug(tree[2]);
         html = this.render(tree[2]);
 
-	return "<p>" + html + "</p>";
+        return "<p>" + html + "</p>";
     }
 
     /*
@@ -450,7 +450,7 @@ showrest.converter = function() {
                                       null]);
                 } else {
                     stack[0][2].push(['section', [text, next_text[0]], null]);
-		}
+                }
                 ++i;
                 continue;
             }
@@ -498,7 +498,7 @@ showrest.converter = function() {
         }
 
         this.tokenizePostProcess(top);
-	return top;
+        return top;
     }
 
     /*
@@ -558,10 +558,10 @@ showrest.converter = function() {
                 /* Escape */
                 m = text.match(/^\\(.)/);
                 if (m) {
-		    push();
-		    tokens.push(['text', [m[1]], null])
-		    continue;
-		}
+                    push();
+                    tokens.push(['text', [m[1]], null])
+                    continue;
+                }
 
                 /* Reference */
                 m = text.match(/^([a-zA-Z0-9-]+|`[^`]+`)(__|_)/);
@@ -658,15 +658,15 @@ showrest.converter = function() {
             /* Other stuff */
             m = text.match(/([\*`_]+|[a-zA-Z0-9]+_)/);
             if (m) {
-		if (RegExp.leftContext.length > 0) {
-		    last_char = RegExp.leftContext[RegExp.leftContext.length-1];
-		    text = RegExp.lastMatch + RegExp.rightContext;
+                if (RegExp.leftContext.length > 0) {
+                    last_char = RegExp.leftContext[RegExp.leftContext.length-1];
+                    text = RegExp.lastMatch + RegExp.rightContext;
                     tokens.push(['text', [RegExp.leftContext], null]);
-		} else {
+                } else {
                     tokens.push(['error', ["Invalid inline markup: "+text], 
-				 null]);
-		    break;
-		}
+                                 null]);
+                    break;
+                }
                 continue;
             } else {
                 tokens.push(['text', [text], null]);
@@ -681,19 +681,19 @@ showrest.converter = function() {
      * Dedent and strip text lines to [(indent_size, text), ...]
      */
     this.dedent = function(text) {
-	var lines = text.split("\n");
-	var out = [];
-	var indent_re = /^\s*/m;
+        var lines = text.split("\n");
+        var out = [];
+        var indent_re = /^\s*/m;
         var i;
-	for (i = 0; i < lines.length; ++i) {
+        for (i = 0; i < lines.length; ++i) {
             line = lines[i];
-	    if (indent_re.test(line)) {
+            if (indent_re.test(line)) {
                 var indent = line.length - RegExp.rightContext.length;
                 var text = RegExp.rightContext;
                 /\s*$/.test(text);
- 		out.push([indent, RegExp.leftContext]);
-	    }
-	}
- 	return out;
+                out.push([indent, RegExp.leftContext]);
+            }
+        }
+        return out;
     }
 }
