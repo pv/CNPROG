@@ -555,6 +555,14 @@ showrest.converter = function() {
             if (inline_markup_ok) {
                 /* Inline markup allowed: */
 
+                /* Escape */
+                m = text.match(/^\\(.)/);
+                if (m) {
+		    push();
+		    tokens.push(['text', [m[1]], null])
+		    continue;
+		}
+
                 /* Reference */
                 m = text.match(/^([a-zA-Z0-9-]+|`[^`]+`)(__|_)/);
                 if (m) {
@@ -637,7 +645,7 @@ showrest.converter = function() {
 
             /* Raw link */
             /* FIXME: should it be separated by sep-chars? */
-            m = text.match(/^([^\*`_]+\s|)(http:\/\/[^\s,!?]*[^\s.,!?])/);
+            m = text.match(/^([^\*`_\\]+\s|)(http:\/\/[^\s,!?]*[^\s.,!?])/);
             if (m) {
                 push();
                 if (m[1]) {
