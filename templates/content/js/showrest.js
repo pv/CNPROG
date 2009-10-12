@@ -206,7 +206,7 @@ showrest.converter = function() {
     }
 
     this.visit_block = function(item, i, items) {
-        return "<div>" + this.render(item[2]) + "</div>\n";
+        return "<blockquote>" + this.render(item[2]) + "</blockquote>\n";
     }
 
     this.visit_link = function(item, i, items) {
@@ -329,13 +329,23 @@ showrest.converter = function() {
                     stack[0][2].push(token);
                     stack.unshift(token);
                     indent_stack.unshift(indent);
+                    if (!last_empty) {
+                        /* .. but erroneous */
+                        stack[0][2].push(['error', ['Unexpected indentation'],
+                                          null]);
+                    }
                 }
             } else if (indent < indent_stack[0]) {
-                /* FIXME: recognize unexpected dedents */
+                /* FIXME: recognize unexpected dedents: is this correct? */
 
                 while (indent_stack[0] > indent) {
                     stack.shift();
                     indent_stack.shift()
+                }
+
+                if (indent_stack[0] < indent) {
+                    stack[0][2].push(['error', ['Unexpected indentation'],
+                                      null]);
                 }
             }
 
@@ -482,8 +492,6 @@ showrest.converter = function() {
             /* FIXME: option lists */
 
             /* FIXME: quoted literal blocks */
-
-            /* FIXME: doctest blocks */
 
             /* FIXME: doctest blocks */
 
